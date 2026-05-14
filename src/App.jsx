@@ -453,6 +453,9 @@ function AnimalModal({ animal, onClose, onFav, favs }) {
 }
 
 // ── PUBLISH MODAL ─────────────────────────────────────────────────────────────
+const Field = ({ label, children }) => (
+    <div><label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>{label}</label>{children}</div>
+  )
 function PublishModal({ onClose, onPublish }) {
   const { user, profile } = useAuth()
   const [form, setForm] = useState({ type:'perdido', species:'perro', name:'', breed:'', color:'', size:'mediano', age:'', gender:'macho', zone:'Centro Histórico', address:'', description:'', phone: profile?.phone || '', reward:'' })
