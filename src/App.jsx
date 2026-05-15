@@ -465,7 +465,8 @@ function PublishModal({ onClose, onPublish }) {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [loading, setLoading] = useState(false)
   const fileRef = useRef()
-  const update = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const update = useCallback((k, v) => setForm(f => ({ ...f, [k]: v })), [])
+  const [step, setStep] = useState(1)
 
   const handleFile = e => {
     const file = e.target.files[0]
