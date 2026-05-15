@@ -453,20 +453,27 @@ function AnimalModal({ animal, onClose, onFav, favs }) {
 }
 
 // ── PUBLISH MODAL ─────────────────────────────────────────────────────────────
-const Field = ({ label, children }) => (
-    <div><label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>{label}</label>{children}</div>
-  )
 function PublishModal({ onClose, onPublish }) {
   const { user, profile } = useAuth()
-  const [form, setForm] = useState({ type:'perdido', species:'perro', name:'', breed:'', color:'', size:'mediano', age:'', gender:'macho', zone:'Centro Histórico', address:'', description:'', phone: profile?.phone || '', reward:'' })
+  const [type, setType] = useState('perdido')
+  const [species, setSpecies] = useState('perro')
+  const [size, setSize] = useState('mediano')
+  const [gender, setGender] = useState('macho')
+  const [zone, setZone] = useState('Centro Histórico')
+  const [name, setName] = useState('')
+  const [breed, setBreed] = useState('')
+  const [color, setColor] = useState('')
+  const [age, setAge] = useState('')
+  const [address, setAddress] = useState('')
+  const [description, setDescription] = useState('')
+  const [phone, setPhone] = useState(profile?.phone || '')
+  const [reward, setReward] = useState('')
   const [step, setStep] = useState(1)
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [loading, setLoading] = useState(false)
   const fileRef = useRef()
-  const update = useCallback((k, v) => setForm(f => ({ ...f, [k]: v })), [])
-  const [step, setStep] = useState(1)
 
   const handleFile = e => {
     const file = e.target.files[0]
@@ -478,12 +485,10 @@ function PublishModal({ onClose, onPublish }) {
   }
 
   const handleSubmit = async () => {
-    if (!form.name || !form.description || !form.phone) { alert('Completá nombre, descripción y teléfono.'); return }
+    if (!name || !description || !phone) { alert('Completá nombre, descripción y teléfono.'); return }
     setLoading(true)
     try {
       let photoUrl = 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400'
-
-      // Subir a Cloudinary si hay imagen
       if (imageFile) {
         try {
           const result = await uploadImage(imageFile, setUploadProgress)
@@ -492,28 +497,21 @@ function PublishModal({ onClose, onPublish }) {
           if (imagePreview) photoUrl = imagePreview
         }
       }
-
       const animalData = {
-        ...form,
+        type, species, size, gender, zone, name, breed, color, age, address, description, phone, reward,
         user_id: user?.id || null,
         photos: [photoUrl],
         date: new Date().toISOString().split('T')[0],
         lat: -24.787 + (Math.random() - 0.5) * 0.05,
         lng: -65.409 + (Math.random() - 0.5) * 0.05,
-        source: 'manual',
-        verified: false,
-        likes: 0,
-        views: 0,
+        source: 'manual', verified: false, likes: 0, views: 0,
         user: profile?.full_name || 'Usuario AnimalFinder'
       }
-
-      // Guardar en Supabase
       let savedAnimal = { ...animalData, id: Date.now().toString() }
       if (user) {
         const { data } = await animalsHelpers.create(animalData)
         if (data) savedAnimal = data
       }
-
       onPublish(savedAnimal)
       onClose()
     } catch (err) {
@@ -522,10 +520,6 @@ function PublishModal({ onClose, onPublish }) {
       setLoading(false)
     }
   }
-
-  const Field = ({ label, children }) => (
-    <div><label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>{label}</label>{children}</div>
-  )
 
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(26,26,46,.65)', zIndex:60, display:'flex', alignItems:'flex-end', justifyContent:'center' }} className="fade-in">
@@ -544,45 +538,82 @@ function PublishModal({ onClose, onPublish }) {
         </div>
 
         <div style={{ padding:'0 22px 30px', display:'flex', flexDirection:'column', gap:14 }}>
-          {step === 1 && <div style={{ display:'flex', flexDirection:'column', gap:14 }} className="stagger">
-            <Field label="Tipo de aviso *">
+          {step === 1 && <>
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Tipo de aviso *</label>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:7 }}>
                 {['perdido','encontrado','adopcion'].map(t => (
-                  <button key={t} onClick={() => update('type', t)} style={{ padding:'9px 4px', borderRadius:11, fontSize:12, fontWeight:700, border:`2px solid ${form.type===t?'var(--primary)':'var(--border)'}`, background:form.type===t?'var(--primary)':'white', color:form.type===t?'white':'#6B7280', cursor:'pointer', transition:'all .2s', fontFamily:"'DM Sans',sans-serif" }}>
+                  <button key={t} onClick={() => setType(t)} style={{ padding:'9px 4px', borderRadius:11, fontSize:12, fontWeight:700, border:`2px solid ${type===t?'var(--primary)':'var(--border)'}`, background:type===t?'var(--primary)':'white', color:type===t?'white':'#6B7280', cursor:'pointer', transition:'all .2s', fontFamily:"'DM Sans',sans-serif" }}>
                     {TYPE_CONFIG[t].icon}<br/>{TYPE_CONFIG[t].label}
                   </button>
                 ))}
               </div>
-            </Field>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:11 }}>
-              <Field label="Especie *"><select className="input select" value={form.species} onChange={e=>update('species',e.target.value)}><option value="perro">🐶 Perro</option><option value="gato">🐱 Gato</option><option value="otro">🐾 Otro</option></select></Field>
-              <Field label="Género *"><select className="input select" value={form.gender} onChange={e=>update('gender',e.target.value)}><option value="macho">Macho</option><option value="hembra">Hembra</option><option value="desconocido">Desconocido</option></select></Field>
-            </div>
-            <Field label="Nombre"><input className="input" placeholder="Coco, Luna, Sin nombre..." value={form.name} onChange={e=>update('name',e.target.value)} /></Field>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:11 }}>
-              <Field label="Raza"><input className="input" placeholder="Mestizo, Labrador..." value={form.breed} onChange={e=>update('breed',e.target.value)} /></Field>
-              <Field label="Color"><input className="input" placeholder="Negro, blanco..." value={form.color} onChange={e=>update('color',e.target.value)} /></Field>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:11 }}>
-              <Field label="Tamaño"><select className="input select" value={form.size} onChange={e=>update('size',e.target.value)}><option value="pequeño">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option></select></Field>
-              <Field label="Edad aprox."><input className="input" placeholder="3 meses, 2 años..." value={form.age} onChange={e=>update('age',e.target.value)} /></Field>
+              <div>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Especie *</label>
+                <select className="input select" value={species} onChange={e => setSpecies(e.target.value)}><option value="perro">🐶 Perro</option><option value="gato">🐱 Gato</option><option value="otro">🐾 Otro</option></select>
+              </div>
+              <div>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Género *</label>
+                <select className="input select" value={gender} onChange={e => setGender(e.target.value)}><option value="macho">Macho</option><option value="hembra">Hembra</option><option value="desconocido">Desconocido</option></select>
+              </div>
             </div>
-            <Field label="Foto del animal">
-              <div onClick={() => fileRef.current?.click()} style={{ border:'2px dashed var(--border)', borderRadius:12, padding:18, textAlign:'center', cursor:'pointer', background:'#FAFAF8', transition:'border-color .2s' }} onMouseEnter={e=>e.currentTarget.style.borderColor='var(--primary)'} onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}>
-                {imagePreview ? <img src={imagePreview} alt="preview" style={{ height:80, borderRadius:8, objectFit:'cover' }} /> : <><div style={{ fontSize:30, marginBottom:6 }}>📸</div><div style={{ fontSize:13, color:'#B0ADA8', fontWeight:600 }}>Tocá para subir foto</div><div style={{ fontSize:11, color:'#C9C7C2', marginTop:3 }}>Se sube a Cloudinary</div></>}
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Nombre</label>
+              <input className="input" placeholder="Coco, Luna, Sin nombre..." value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:11 }}>
+              <div>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Raza</label>
+                <input className="input" placeholder="Mestizo, Labrador..." value={breed} onChange={e => setBreed(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Color</label>
+                <input className="input" placeholder="Negro, blanco..." value={color} onChange={e => setColor(e.target.value)} />
+              </div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:11 }}>
+              <div>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Tamaño</label>
+                <select className="input select" value={size} onChange={e => setSize(e.target.value)}><option value="pequeño">Pequeño</option><option value="mediano">Mediano</option><option value="grande">Grande</option></select>
+              </div>
+              <div>
+                <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Edad aprox.</label>
+                <input className="input" placeholder="3 meses, 2 años..." value={age} onChange={e => setAge(e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Foto del animal</label>
+              <div onClick={() => fileRef.current?.click()} style={{ border:'2px dashed var(--border)', borderRadius:12, padding:18, textAlign:'center', cursor:'pointer', background:'#FAFAF8' }}>
+                {imagePreview ? <img src={imagePreview} alt="preview" style={{ height:80, borderRadius:8, objectFit:'cover' }} /> : <><div style={{ fontSize:30, marginBottom:6 }}>📸</div><div style={{ fontSize:13, color:'#B0ADA8', fontWeight:600 }}>Tocá para subir foto</div></>}
                 <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleFile} />
               </div>
-            </Field>
+            </div>
             <button onClick={() => setStep(2)} className="btn btn-dark" style={{ width:'100%' }}>Siguiente →</button>
-          </div>}
+          </>}
 
-          {step === 2 && <div style={{ display:'flex', flexDirection:'column', gap:14 }} className="stagger">
-            <Field label="Zona / Barrio *"><select className="input select" value={form.zone} onChange={e=>update('zone',e.target.value)}>{ZONES.slice(1).map(z=><option key={z} value={z}>{z}</option>)}</select></Field>
-            <Field label="Dirección aproximada"><input className="input" placeholder="Av. Entre Ríos y Mitre" value={form.address} onChange={e=>update('address',e.target.value)} /></Field>
-            <Field label="Descripción *"><textarea className="input" style={{ height:95, resize:'none' }} placeholder="Describí al animal, señas particulares, cuándo y dónde fue visto..." value={form.description} onChange={e=>update('description',e.target.value)} /></Field>
-            <Field label="Teléfono de contacto *"><input className="input" type="tel" placeholder="387-4XXXXXX" value={form.phone} onChange={e=>update('phone',e.target.value)} /></Field>
-            {form.type === 'perdido' && <Field label="Recompensa (opcional)"><input className="input" placeholder="Ej: $10.000" value={form.reward} onChange={e=>update('reward',e.target.value)} /></Field>}
-
+          {step === 2 && <>
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Zona / Barrio *</label>
+              <select className="input select" value={zone} onChange={e => setZone(e.target.value)}>{ZONES.slice(1).map(z=><option key={z} value={z}>{z}</option>)}</select>
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Dirección aproximada</label>
+              <input className="input" placeholder="Av. Entre Ríos y Mitre" value={address} onChange={e => setAddress(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Descripción *</label>
+              <textarea className="input" style={{ height:95, resize:'none' }} placeholder="Describí al animal..." value={description} onChange={e => setDescription(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Teléfono *</label>
+              <input className="input" type="tel" placeholder="387-4XXXXXX" value={phone} onChange={e => setPhone(e.target.value)} />
+            </div>
+            {type === 'perdido' && <div>
+              <label style={{ display:'block', fontSize:13, fontWeight:600, color:'#374151', marginBottom:5 }}>Recompensa (opcional)</label>
+              <input className="input" placeholder="Ej: $10.000" value={reward} onChange={e => setReward(e.target.value)} />
+            </div>}
             {loading && uploadProgress > 0 && (
               <div>
                 <div style={{ fontSize:12, color:'#6B7280', marginBottom:5 }}>Subiendo foto... {uploadProgress}%</div>
@@ -591,14 +622,13 @@ function PublishModal({ onClose, onPublish }) {
                 </div>
               </div>
             )}
-
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
               <button onClick={() => setStep(1)} className="btn btn-ghost">← Atrás</button>
               <button onClick={handleSubmit} className="btn btn-primary" disabled={loading}>
                 {loading ? <><div style={{ width:15, height:15, border:'2px solid rgba(255,255,255,.4)', borderTopColor:'white', borderRadius:'50%' }} className="spin" /> Publicando...</> : 'Publicar 🐾'}
               </button>
             </div>
-          </div>}
+          </>}
         </div>
       </div>
     </div>
